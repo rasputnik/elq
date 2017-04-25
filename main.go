@@ -8,14 +8,15 @@ import (
 
 func main() {
 
-  var server string
+  var server, auth string
   flag.StringVar(&server, "h", "localhost:6379", "redis server and port")
+  flag.StringVar(&auth, "a", "", "password")
 
   flag.Parse()
 
   var redis_opts = redis.Options{
     Addr: server,
-    Password: "",
+    Password: auth,
     DB: 0,
   } 
 
