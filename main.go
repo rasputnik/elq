@@ -2,17 +2,19 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/buger/goterm"
 	"github.com/go-redis/redis"
-	"os"
 	"sort"
+	"time"
 )
 
 func main() {
 
 	var server, auth string
+	var interval int
 	flag.StringVar(&server, "h", "localhost:6379", "redis server and port")
 	flag.StringVar(&auth, "a", "", "password")
+	flag.IntVar(&interval, "i", 3, "refresh interval in seconds")
 
 	flag.Parse()
 
@@ -24,23 +26,36 @@ func main() {
 
 	client := redis.NewClient(&redis_opts)
 
-	_, err := client.Ping().Result()
-	if err != nil {
-		fmt.Println("ping failed - bad host? bombing out.")
+	tic := time.Tick(time.Duration(interval) * time.Second)
+	for _ = range tic {
+		checkQueues(client)
 	}
 
-	queues, err := client.Keys("*").Result()
+}
+
+func checkQueues(r *redis.Client) {
+	goterm.Clear()
+	goterm.MoveCursor(1, 1)
+
+	_, err := r.Ping().Result()
 	if err != nil {
-		fmt.Println("no keys? bombing out.")
+		goterm.Println("ping failed - bad host?")
+	}
+
+	queues, err := r.Keys("*").Result()
+	if err != nil {
+		goterm.Println("no keys?")
 	}
 	sort.Strings(queues)
+
+	goterm.Clear()
 	for _, q := range queues {
-		qlen, err := client.LLen(q).Result()
+		qlen, err := r.LLen(q).Result()
 		if err != nil {
 			// probably not a list, skip
 			continue
 		}
-		fmt.Printf("%s : %d\n", q, qlen)
+		goterm.Printf("%s : %d\n", q, qlen)
 	}
-
+	goterm.Flush()
 }
