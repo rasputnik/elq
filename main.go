@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+// key = queue name,
+// val = length of queue
+type QState map[string]int64
+
 func main() {
 
 	var server, auth string
@@ -26,16 +30,29 @@ func main() {
 
 	client := redis.NewClient(&redis_opts)
 
+	var queueCounts, lastCounts QState
+
 	tic := time.Tick(time.Duration(interval) * time.Second)
 	for _ = range tic {
-		checkQueues(client)
+		queueCounts = checkQueues(client)
+		displayCounts(queueCounts, lastCounts)
+		lastCounts = queueCounts
 	}
 
 }
 
-func checkQueues(r *redis.Client) {
+func displayCounts(q QState, oldq QState) {
 	goterm.Clear()
 	goterm.MoveCursor(1, 1)
+	for k, v := range q {
+		// check previous value
+		oldv := oldq[k]
+		goterm.Printf("%s : %d (delta: %d)\n", k, v, (v - oldv))
+	}
+	goterm.Flush()
+}
+
+func checkQueues(r *redis.Client) QState {
 
 	_, err := r.Ping().Result()
 	if err != nil {
@@ -47,15 +64,16 @@ func checkQueues(r *redis.Client) {
 		goterm.Println("no keys?")
 	}
 	sort.Strings(queues)
+	var results QState
+	results = make(QState)
 
-	goterm.Clear()
 	for _, q := range queues {
 		qlen, err := r.LLen(q).Result()
 		if err != nil {
 			// probably not a list, skip
 			continue
 		}
-		goterm.Printf("%s : %d\n", q, qlen)
+		results[q] = qlen
 	}
-	goterm.Flush()
+	return results
 }
