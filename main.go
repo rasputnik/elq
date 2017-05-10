@@ -12,6 +12,16 @@ import (
 // val = length of queue
 type QState map[string]int64
 
+// return sorted key list
+func (qs QState) Keys() []string {
+	var keys []string
+	for k, _ := range qs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func main() {
 
 	var server, auth string
@@ -44,10 +54,10 @@ func main() {
 func displayCounts(q QState, oldq QState) {
 	goterm.Clear()
 	goterm.MoveCursor(1, 1)
-	for k, v := range q {
+	for _, k := range q.Keys() {
 		// check previous value
 		oldv := oldq[k]
-		goterm.Printf("%s : %d (delta: %d)\n", k, v, (v - oldv))
+		goterm.Printf("%s : %d (delta: %d)\n", k, q[k], (q[k] - oldv))
 	}
 	goterm.Flush()
 }
@@ -63,7 +73,6 @@ func checkQueues(r *redis.Client) QState {
 	if err != nil {
 		goterm.Println("no keys?")
 	}
-	sort.Strings(queues)
 	var results QState
 	results = make(QState)
 
