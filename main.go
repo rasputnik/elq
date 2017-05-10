@@ -8,14 +8,15 @@ import (
 	"time"
 )
 
+// QState represents state of redis queues (lists)
 // key = queue name,
 // val = length of queue
 type QState map[string]int64
 
-// return sorted key list
-func (qs QState) Keys() []string {
+// Queues returns sorted list of queue names
+func (qs QState) Queues() []string {
 	var keys []string
-	for k, _ := range qs {
+	for k := range qs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -32,13 +33,13 @@ func main() {
 
 	flag.Parse()
 
-	var redis_opts = redis.Options{
+	var redisOpts = redis.Options{
 		Addr:     server,
 		Password: auth,
 		DB:       0,
 	}
 
-	client := redis.NewClient(&redis_opts)
+	client := redis.NewClient(&redisOpts)
 
 	var queueCounts, lastCounts QState
 
@@ -54,7 +55,7 @@ func main() {
 func displayCounts(q QState, oldq QState) {
 	goterm.Clear()
 	goterm.MoveCursor(1, 1)
-	for _, k := range q.Keys() {
+	for _, k := range q.Queues() {
 		// check previous value
 		oldv := oldq[k]
 		goterm.Printf("%s : %d (delta: %d)\n", k, q[k], (q[k] - oldv))
