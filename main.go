@@ -28,7 +28,7 @@ func main() {
 	var server, auth string
 	var interval int
 	flag.StringVar(&server, "h", "localhost:6379", "redis server and port")
-	flag.StringVar(&auth, "a", "", "password")
+	flag.StringVar(&auth, "a", "", "(optional) password")
 	flag.IntVar(&interval, "i", 3, "refresh interval in seconds")
 
 	flag.Parse()
